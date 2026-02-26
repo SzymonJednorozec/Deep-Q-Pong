@@ -24,7 +24,6 @@ class PongGame:
         self.display = pygame.display.set_mode((WIDTH,HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
-        self.running = True
         self.game_active = False
         self.winner = None
         
