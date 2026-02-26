@@ -77,12 +77,12 @@ class PongGame:
     def _check_score(self):
         if self.ball.pos.x < 0:
             pass
-            # self.score_r += 1
-            # self.full_reset()
+            self.score_r += 1
+            self.full_reset()
         elif self.ball.pos.x > WIDTH:
             pass
-            # self.score_l += 1
-            # self.full_reset()
+            self.score_l += 1
+            self.full_reset()
         
         if self.score_l >= WINNING_SCORE: self.winner = "LEFT"
         if self.score_r >= WINNING_SCORE: self.winner = "RIGHT"
