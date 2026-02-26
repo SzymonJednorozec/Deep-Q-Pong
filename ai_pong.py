@@ -1,5 +1,6 @@
 import pygame, sys, random,math
 from pygame import Vector2 as Vec2
+import numpy as np
 
 pygame.init()
 font = pygame.font.Font('arial.ttf', 25)
@@ -24,8 +25,6 @@ class PongGame:
         self.display = pygame.display.set_mode((WIDTH,HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
-        self.running = True
-        self.game_active = False
         self.winner = None
         
         self.score_l = 0
@@ -42,6 +41,7 @@ class PongGame:
         self.full_reset()
 
     def full_reset(self):
+        self.winner = None
         self.ball.reset()
         self.paddle_l.reset()
         self.paddle_r.reset()
@@ -55,39 +55,42 @@ class PongGame:
         self.ball.draw()
         pygame.display.flip()
 
-    def game_loop(self):
-        dt = 0
-        while self.running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    quit()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                    if self.winner: self.reset_game()
-                    else: self.game_active = True
+    def play_step(self,dt,action_l=None,action_r=None):
+        game_over = False
+        reward_l , reward_r = 0,0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
 
-            if self.game_active and not self.winner:
-                self._check_collisions(self.ball,self.paddle_l,self.paddle_r)
-                self._move(dt)
-                self._check_score()
+        if not self.winner:
+            reward_l , reward_r += self._check_collisions(self.ball,self.paddle_l,self.paddle_r)
+            self._move(dt,action_l=None,action_r=None)
+            reward_l , reward_r += self._check_score()
+        else: game_over = True
 
-            self._draw()
-            dt = self.clock.tick(SPEED)/1000
+        self._draw()
+        dt = self.clock.tick(SPEED)/1000
+        return reward_l,reward_r, game_over, self.score_l, self.score_r
 
     def _check_score(self):
         if self.ball.pos.x < self.paddle_offset:
             self.score_r += 1
             self.full_reset()
+            reward_l,reward_r = -10,10
         elif self.ball.pos.x > WIDTH - self.paddle_offset:
             self.score_l += 1
             self.full_reset()
+            reward_l,reward_r = 10,-10
+        else: reward_l,reward_r = 0,0
         
         if self.score_l >= WINNING_SCORE: self.winner = "LEFT"
         if self.score_r >= WINNING_SCORE: self.winner = "RIGHT"
+        return reward_l,reward_r
 
-    def _move(self,dt):
-        self.paddle_l.move_l(dt)
-        self.paddle_r.move_r(dt)
+    def _move(self,dt,action_l,action_r):
+        self.paddle_l.move_AI(dt,action_l)
+        self.paddle_r.move_AI(dt,action_r)
         self.ball.move(dt)
     
     def _draw_ui(self):
@@ -96,18 +99,19 @@ class PongGame:
         self.display.blit(score_l, (WIDTH // 4, 50))
         self.display.blit(score_r, (WIDTH * 3 // 4, 50))
         
-        if self.winner:
-            txt = f"PLAYER {self.winner} WINS!"
-            win_surf = large_font.render(txt, True, RED)
-            sub_surf = font.render("PRESS SPACE TO RESTART", True, WHITE)
-            self.display.blit(win_surf, (WIDTH//2 - win_surf.get_width()//2, HEIGHT//2 - 100))
-            self.display.blit(sub_surf, (WIDTH//2 - sub_surf.get_width()//2, HEIGHT//2))
-        elif not self.game_active:
-            msg = font.render("PRESS SPACE TO SERVE", True, WHITE)
-            self.display.blit(msg, (WIDTH//2 - msg.get_width()//2, HEIGHT//2 + 50))
+        # if self.winner:
+        #     txt = f"PLAYER {self.winner} WINS!"
+        #     win_surf = large_font.render(txt, True, RED)
+        #     sub_surf = font.render("PRESS SPACE TO RESTART", True, WHITE)
+        #     self.display.blit(win_surf, (WIDTH//2 - win_surf.get_width()//2, HEIGHT//2 - 100))
+        #     self.display.blit(sub_surf, (WIDTH//2 - sub_surf.get_width()//2, HEIGHT//2))
+        # elif not self.game_active:
+        #     msg = font.render("PRESS SPACE TO SERVE", True, WHITE)
+        #     self.display.blit(msg, (WIDTH//2 - msg.get_width()//2, HEIGHT//2 + 50))
     
     def _check_collisions(self,ball,paddle_l,paddle_r):
         #ceil
+        reward_l,reward_r = 0,0
         if ball.pos.y+ball.r<0:
             ball.dir.y = abs(ball.dir.y)
         #floor
@@ -122,6 +126,7 @@ class PongGame:
 
             ball.dir = ball.dir.normalize()
             ball.speed *= SPEED_GROW_RATE
+            reward_l,reward_r = 1,0
 
         #right paddle
         if (ball.pos.x+ball.r>(paddle_r.pos.x - paddle_r.w/2)) and (paddle_r.pos.y-paddle_r.h/2<= ball.pos.y <= paddle_r.pos.y+paddle_r.h/2):
@@ -132,7 +137,8 @@ class PongGame:
 
             ball.dir = ball.dir.normalize()
             ball.speed *= SPEED_GROW_RATE
-            # ball.dir = Vec2(ball.dir.x,min(ball.dir.y + paddle_r.dir*0.75,1)).normalize()
+            reward_l,reward_r = 0,1
+        return reward_l,reward_r
 
 
 class Paddle:
@@ -175,6 +181,15 @@ class Paddle:
         pos_change = self.dir * PADDLE_SPEED * dt
         if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
             self.pos.y += pos_change
+        
+    def move_AI(self,dt,action):
+        if np.array_equal(action[1,0,0]):  self.dir = -1  
+        elif np.array_equal(action[0,1,0]): self.dir = 0  
+        else: self.dir = 1
+
+        pos_change = self.dir * PADDLE_SPEED * dt
+        if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
+            self.pos.y += pos_change
 
 
 class Ball:
@@ -201,7 +216,3 @@ class Ball:
     
     def move(self,dt):
         self.pos += (self.dir*self.speed)*dt
-
-if __name__ == "__main__":
-    game = PongGame()
-    game.game_loop()
