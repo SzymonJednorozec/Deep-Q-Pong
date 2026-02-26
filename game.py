@@ -75,12 +75,10 @@ class PongGame:
             dt = self.clock.tick(SPEED)/1000
 
     def _check_score(self):
-        if self.ball.pos.x < 0:
-            pass
+        if self.ball.pos.x < self.paddle_offset:
             self.score_r += 1
             self.full_reset()
-        elif self.ball.pos.x > WIDTH:
-            pass
+        elif self.ball.pos.x > WIDTH - self.paddle_offset:
             self.score_l += 1
             self.full_reset()
         
@@ -147,7 +145,7 @@ class Paddle:
         self.dir = 0
 
     def reset(self):
-        self.pos = self.start_pos
+        self.pos = Vec2(self.start_pos)
         self.dir = 0
 
     def draw(self):
@@ -189,7 +187,7 @@ class Ball:
         self.speed = START_BALL_SPEED
     
     def reset(self):
-        self.pos = self.start_pos
+        self.pos = Vec2(self.start_pos)
         self.speed = START_BALL_SPEED
         self.dir = self._get_ball_direction()
 
