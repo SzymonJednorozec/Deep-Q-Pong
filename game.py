@@ -16,7 +16,7 @@ PADDLE_SPEED = 300
 START_BALL_SPEED = 300
 SPEED_GROW_RATE = 1.005
 
-WHITE, BLACK, CYAN, RED = (255, 255, 255), (0, 0, 0), (0, 255, 255), (255, 50, 50)
+WHITE, BLACK, GRAY, RED = (255, 255, 255), (0, 0, 0), (150, 150, 150), (255, 50, 50)
 
 class PongGame:
     def __init__(self,paddle_offset = 40):
@@ -76,11 +76,13 @@ class PongGame:
 
     def _check_score(self):
         if self.ball.pos.x < 0:
-            self.score_r += 1
-            self.full_reset()
+            pass
+            # self.score_r += 1
+            # self.full_reset()
         elif self.ball.pos.x > WIDTH:
-            self.score_l += 1
-            self.full_reset()
+            pass
+            # self.score_l += 1
+            # self.full_reset()
         
         if self.score_l >= WINNING_SCORE: self.winner = "LEFT"
         if self.score_r >= WINNING_SCORE: self.winner = "RIGHT"
@@ -91,8 +93,8 @@ class PongGame:
         self.ball.move(dt)
     
     def _draw_ui(self):
-        score_l = font.render(str(self.score_l), True, CYAN)
-        score_r = font.render(str(self.score_r), True, CYAN)
+        score_l = font.render(str(self.score_l), True, GRAY)
+        score_r = font.render(str(self.score_r), True, GRAY)
         self.display.blit(score_l, (WIDTH // 4, 50))
         self.display.blit(score_r, (WIDTH * 3 // 4, 50))
         
@@ -160,7 +162,9 @@ class Paddle:
         else:
             self.dir=0
            
-        self.pos.y += self.dir * PADDLE_SPEED * dt
+        pos_change = self.dir * PADDLE_SPEED * dt
+        if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
+            self.pos.y += pos_change
         
     def move_r(self,dt,):
         keys = pygame.key.get_pressed()
@@ -170,8 +174,10 @@ class Paddle:
             self.dir = 1
         else:
             self.dir=0
-        
-        self.pos.y += self.dir * PADDLE_SPEED * dt
+        pos_change = self.dir * PADDLE_SPEED * dt
+        if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
+            self.pos.y += pos_change
+
 
 class Ball:
     def __init__(self,pos,radius,display):
