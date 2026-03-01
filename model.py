@@ -39,5 +39,21 @@ class Qtrainer:
         action = torch.tensor(action, dtype=torch.long)
         reward = torch.tensor(reward, dtype=torch.float)
 
+        pred = self.model(state)
+        target = pred.copy()
+        for idx in len(target):
+            action_id = torch.argmax(action[idx]).item()
+            y = reward[idx]
+            if not done[idx]:
+                y = reward[idx] + self.gamma*torch.max(self.target_model(next_state[idx]))
+
+            target[idx][action_id] = y
+        
+        self.optimizer.zero_grad()
+        loss = self.criterion(target, pred)
+        loss.backward()
+
+        self.optimizer.step()
+
 
         
