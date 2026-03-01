@@ -140,6 +140,16 @@ class PongGame:
             reward_l,reward_r = 0,1
         return reward_l,reward_r
 
+    def get_state(self,paddle):
+        state = [
+            paddle.pos.y/HEIGHT,
+            self.ball.pos.x/WIDTH,
+            self.ball.pos.x/HEIGHT,
+            self.ball.dir.x,
+            self.ball.dir.y,
+        ]
+        return state
+
 
 class Paddle:
     def __init__(self, pos: Vec2, display, width=20,height=100):
