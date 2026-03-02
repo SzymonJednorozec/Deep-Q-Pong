@@ -65,32 +65,35 @@ class PongGame:
 
         if not self.winner:
             reward_l , reward_r += self._check_collisions(self.ball,self.paddle_l,self.paddle_r)
-            self._move(dt,action_l=None,action_r=None)
+            self._move(dt,action_l,action_r)
             reward_l , reward_r += self._check_score()
-        else: game_over = True
+        else: 
+            game_over = True
+            self.full_reset()
 
         self._draw()
-        dt = self.clock.tick(SPEED)/1000
         return reward_l,reward_r, game_over, self.score_l, self.score_r
 
     def _check_score(self):
         if self.ball.pos.x < self.paddle_offset:
             self.score_r += 1
-            self.full_reset()
             reward_l,reward_r = -10,10
+            self.winner = "RIGHT"
         elif self.ball.pos.x > WIDTH - self.paddle_offset:
             self.score_l += 1
-            self.full_reset()
             reward_l,reward_r = 10,-10
+            self.winner = "LEFT"
         else: reward_l,reward_r = 0,0
         
-        if self.score_l >= WINNING_SCORE: self.winner = "LEFT"
-        if self.score_r >= WINNING_SCORE: self.winner = "RIGHT"
         return reward_l,reward_r
 
     def _move(self,dt,action_l,action_r):
-        self.paddle_l.move_AI(dt,action_l)
-        self.paddle_r.move_AI(dt,action_r)
+        if action_l:    self.paddle_l.move_AI(dt,action_l)
+        else:           self.paddle_l.move_l(dt)
+
+        if action_r:    self.paddle_r.move_AI(dt,action_r)
+        else:           self.paddle_r.move_r(dt)
+
         self.ball.move(dt)
     
     def _draw_ui(self):
