@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import os
+import copy
 
 class Linear_Qnet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -22,17 +23,21 @@ class Linear_Qnet(nn.Module):
 
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
+    
 
 
 class Qtrainer:
-    def __init__(self,model,target_model,lr,gamma):
+    def __init__(self,model,lr,gamma):
         self.lr = lr
         self.gamma = gamma
         self.model = model
-        self.target_model = target_model
+        self.target_model = copy.deepcopy(model)
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
     
+    def update_target_model(self):
+        self.target_model.load_state_dict(self.model.state_dict())
+
     def train_step(self,state, action, reward, next_state, done):
         state = torch.tensor(state, dtype=torch.float)
         next_state = torch.tensor(next_state, dtype=torch.float)
