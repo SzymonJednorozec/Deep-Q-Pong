@@ -15,7 +15,7 @@ SPEED = 100
 
 PADDLE_SPEED = 300
 PADDLE_OFFSET = 40
-START_BALL_SPEED = 700
+START_BALL_SPEED = 500
 SPEED_GROW_RATE = 1.005
 
 WHITE, BLACK, GRAY, RED = (255, 255, 255), (0, 0, 0), (150, 150, 150), (255, 50, 50)
@@ -30,6 +30,8 @@ class PongGame:
         
         self.score_l = 0
         self.score_r = 0
+        self.points_l = 0
+        self.points_r = 0
 
         self.paddle_l = Paddle(Vec2(0+self.paddle_offset,HEIGHT/2),self.display,left)
         self.paddle_r = Paddle(Vec2(WIDTH-self.paddle_offset,HEIGHT/2),self.display,right)
@@ -44,6 +46,8 @@ class PongGame:
 
     def full_reset(self):
         self.winner = None
+        self.points_r = 0
+        self.points_l = 0
         self.ball.reset()
         self.paddle_l.reset()
         self.paddle_r.reset()
@@ -106,8 +110,12 @@ class PongGame:
     def _draw_ui(self):
         score_l = font.render(str(self.score_l), True, GRAY)
         score_r = font.render(str(self.score_r), True, GRAY)
+        points_l = font.render(str(self.points_l), True, GRAY)
+        points_r = font.render(str(self.points_r), True, GRAY)
         self.display.blit(score_l, (WIDTH // 4, 50))
         self.display.blit(score_r, (WIDTH * 3 // 4, 50))
+        self.display.blit(points_l, (WIDTH // 4, 80))
+        self.display.blit(points_r, (WIDTH * 3 // 4, 80))
         
         # if self.winner:
         #     txt = f"PLAYER {self.winner} WINS!"
@@ -137,7 +145,8 @@ class PongGame:
 
                 ball.dir = ball.dir.normalize()
                 ball.speed *= SPEED_GROW_RATE
-                reward_l,reward_r = 1,0
+                reward_l,reward_r = 10,0
+                self.points_l += 1
         else:
             if ball.pos.x < 0:
                 ball.dir.x = abs(ball.dir.x)
@@ -152,7 +161,8 @@ class PongGame:
 
                 ball.dir = ball.dir.normalize()
                 ball.speed *= SPEED_GROW_RATE
-                reward_l,reward_r = 0,1
+                reward_l,reward_r = 0,10
+                self.points_r+=1
         else:
             if ball.pos.x > WIDTH:
                 ball.dir.x = -abs(ball.dir.x)
