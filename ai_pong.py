@@ -14,14 +14,15 @@ HEIGHT = 720
 SPEED = 100
 
 PADDLE_SPEED = 300
-START_BALL_SPEED = 300
+PADDLE_OFFSET = 40
+START_BALL_SPEED = 700
 SPEED_GROW_RATE = 1.005
 
 WHITE, BLACK, GRAY, RED = (255, 255, 255), (0, 0, 0), (150, 150, 150), (255, 50, 50)
 
 class PongGame:
-    def __init__(self,paddle_offset = 40):
-        self.paddle_offset = paddle_offset
+    def __init__(self,left=True,right=True):
+        self.paddle_offset = PADDLE_OFFSET 
         self.display = pygame.display.set_mode((WIDTH,HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
@@ -30,8 +31,9 @@ class PongGame:
         self.score_l = 0
         self.score_r = 0
 
-        self.paddle_l = Paddle(Vec2(0+self.paddle_offset,HEIGHT/2),self.display)
-        self.paddle_r = Paddle(Vec2(WIDTH-self.paddle_offset,HEIGHT/2),self.display)
+        self.paddle_l = Paddle(Vec2(0+self.paddle_offset,HEIGHT/2),self.display,left)
+        self.paddle_r = Paddle(Vec2(WIDTH-self.paddle_offset,HEIGHT/2),self.display,right)
+
         self.ball = Ball(Vec2(WIDTH/2,HEIGHT/2),7,self.display)
 
     def reset_game(self):
@@ -58,15 +60,20 @@ class PongGame:
     def play_step(self,dt,action_l=None,action_r=None):
         game_over = False
         reward_l , reward_r = 0,0
+        tmpl,tmpr = 0,0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
 
         if not self.winner:
-            reward_l , reward_r += self._check_collisions(self.ball,self.paddle_l,self.paddle_r)
+            tmpl,tmpr = self._check_collisions(self.ball,self.paddle_l,self.paddle_r)
+            reward_l += tmpl
+            reward_r += tmpr
             self._move(dt,action_l,action_r)
-            reward_l , reward_r += self._check_score()
+            tmpl,tmpr = self._check_score()
+            reward_l += tmpl
+            reward_r += tmpr
         else: 
             game_over = True
             self.full_reset()
@@ -75,11 +82,11 @@ class PongGame:
         return reward_l,reward_r, game_over, self.score_l, self.score_r
 
     def _check_score(self):
-        if self.ball.pos.x < self.paddle_offset:
+        if self.paddle_l.create and self.ball.pos.x < self.paddle_offset:
             self.score_r += 1
             reward_l,reward_r = -10,10
             self.winner = "RIGHT"
-        elif self.ball.pos.x > WIDTH - self.paddle_offset:
+        elif self.paddle_r.create and self.ball.pos.x > WIDTH - self.paddle_offset:
             self.score_l += 1
             reward_l,reward_r = 10,-10
             self.winner = "LEFT"
@@ -121,33 +128,42 @@ class PongGame:
         if ball.pos.y+ball.r>HEIGHT:
             ball.dir.y = -abs(ball.dir.y)
         #left paddle
-        if (ball.pos.x-ball.r<(paddle_l.pos.x + paddle_l.w/2)) and (paddle_l.pos.y-paddle_l.h/2<= ball.pos.y <= paddle_l.pos.y+paddle_l.h/2):
-            ball.dir.x = abs(ball.dir.x)
-            ball.dir.y = paddle_l.dir*0.75
-            if ball.dir.y > 0.8: ball.dir.y = 0.8
-            if ball.dir.y < -0.8: ball.dir.y = -0.8
+        if paddle_l.create:
+            if (ball.pos.x-ball.r<(paddle_l.pos.x + paddle_l.w/2)) and (paddle_l.pos.y-paddle_l.h/2<= ball.pos.y <= paddle_l.pos.y+paddle_l.h/2):
+                ball.dir.x = abs(ball.dir.x)
+                ball.dir.y = paddle_l.dir*0.75
+                if ball.dir.y > 0.8: ball.dir.y = 0.8
+                if ball.dir.y < -0.8: ball.dir.y = -0.8
 
-            ball.dir = ball.dir.normalize()
-            ball.speed *= SPEED_GROW_RATE
-            reward_l,reward_r = 1,0
+                ball.dir = ball.dir.normalize()
+                ball.speed *= SPEED_GROW_RATE
+                reward_l,reward_r = 1,0
+        else:
+            if ball.pos.x < 0:
+                ball.dir.x = abs(ball.dir.x)
 
         #right paddle
-        if (ball.pos.x+ball.r>(paddle_r.pos.x - paddle_r.w/2)) and (paddle_r.pos.y-paddle_r.h/2<= ball.pos.y <= paddle_r.pos.y+paddle_r.h/2):
-            ball.dir.x = -abs(ball.dir.x)
-            ball.dir.y = paddle_r.dir*0.4
-            if ball.dir.y > 0.8: ball.dir.y = 0.8
-            if ball.dir.y < -0.8: ball.dir.y = -0.8
+        if paddle_r.create:
+            if (ball.pos.x+ball.r>(paddle_r.pos.x - paddle_r.w/2)) and (paddle_r.pos.y-paddle_r.h/2<= ball.pos.y <= paddle_r.pos.y+paddle_r.h/2):
+                ball.dir.x = -abs(ball.dir.x)
+                ball.dir.y = paddle_r.dir*0.4
+                if ball.dir.y > 0.8: ball.dir.y = 0.8
+                if ball.dir.y < -0.8: ball.dir.y = -0.8
 
-            ball.dir = ball.dir.normalize()
-            ball.speed *= SPEED_GROW_RATE
-            reward_l,reward_r = 0,1
+                ball.dir = ball.dir.normalize()
+                ball.speed *= SPEED_GROW_RATE
+                reward_l,reward_r = 0,1
+        else:
+            if ball.pos.x > WIDTH:
+                ball.dir.x = -abs(ball.dir.x)
+
         return reward_l,reward_r
 
     def get_state(self,paddle):
         state = [
             paddle.pos.y/HEIGHT,
             self.ball.pos.x/WIDTH,
-            self.ball.pos.x/HEIGHT,
+            self.ball.pos.y/HEIGHT,
             self.ball.dir.x,
             self.ball.dir.y,
         ]
@@ -155,54 +171,60 @@ class PongGame:
 
 
 class Paddle:
-    def __init__(self, pos: Vec2, display, width=20,height=100):
+    def __init__(self, pos: Vec2, display, create=True, width=20, height=100):
         self.start_pos = Vec2(pos)
         self.pos = Vec2(pos)
         self.display = display
         self.w = width
         self.h = height
         self.dir = 0
+        self.create = create
 
     def reset(self):
-        self.pos = Vec2(self.start_pos)
-        self.dir = 0
+        if self.create:
+            self.pos = Vec2(self.start_pos)
+            self.dir = 0
 
     def draw(self):
-        pygame.draw.rect(self.display,WHITE,pygame.Rect(self.pos.x - (self.w/2),self.pos.y-(self.h/2),self.w,self.h))
+        if self.create:
+            pygame.draw.rect(self.display,WHITE,pygame.Rect(self.pos.x - (self.w/2),self.pos.y-(self.h/2),self.w,self.h))
 
-    def move_l(self,dt,):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:
-            self.dir = -1
-        elif keys[pygame.K_s]:
-            self.dir = 1
-        else:
-            self.dir=0
+    def move_l(self,dt):
+        if self.create:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_w]:
+                self.dir = -1
+            elif keys[pygame.K_s]:
+                self.dir = 1
+            else:
+                self.dir=0
            
-        pos_change = self.dir * PADDLE_SPEED * dt
-        if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
-            self.pos.y += pos_change
+            pos_change = self.dir * PADDLE_SPEED * dt
+            if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
+                self.pos.y += pos_change
         
     def move_r(self,dt,):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_UP]:
-            self.dir = -1
-        elif keys[pygame.K_DOWN]:
-            self.dir = 1
-        else:
-            self.dir=0
-        pos_change = self.dir * PADDLE_SPEED * dt
-        if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
-            self.pos.y += pos_change
+        if self.create:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_UP]:
+                self.dir = -1
+            elif keys[pygame.K_DOWN]:
+                self.dir = 1
+            else:
+                self.dir=0
+            pos_change = self.dir * PADDLE_SPEED * dt
+            if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
+                self.pos.y += pos_change
         
     def move_AI(self,dt,action):
-        if np.array_equal(action[1,0,0]):  self.dir = -1  
-        elif np.array_equal(action[0,1,0]): self.dir = 0  
-        else: self.dir = 1
+        if self.create:
+            if np.array_equal(action,[1,0,0]):  self.dir = -1  
+            elif np.array_equal(action,[0,1,0]): self.dir = 0  
+            else: self.dir = 1
 
-        pos_change = self.dir * PADDLE_SPEED * dt
-        if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
-            self.pos.y += pos_change
+            pos_change = self.dir * PADDLE_SPEED * dt
+            if (self.pos.y + self.h/2 + pos_change < HEIGHT) and (self.pos.y - self.h/2 + pos_change > 0):
+                self.pos.y += pos_change
 
 
 class Ball:
