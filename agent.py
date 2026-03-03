@@ -6,7 +6,7 @@ from ai_pong import PongGame
 from model import   Qtrainer, Linear_Qnet
 
 MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
+BATCH_SIZE = 64
 LR = 0.001
 
 class Agent:
@@ -59,7 +59,7 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
     dt = 1/60
     while True:
         if watch:
-            game.clock.tick(60)
+            game.clock.tick(500)
         game_frame_cnt+=1
         state_l,action_l = get_state_action_pair(agent_l,game,game.paddle_l)
         state_r,action_r = get_state_action_pair(agent_r,game,game.paddle_r)
