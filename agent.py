@@ -52,11 +52,14 @@ class Agent:
         return final_move
     
 def train(agent_l:Agent=None,agent_r:Agent=None):
+    watch=True
     game_cnt = 0
     game_frame_cnt = 0
-    game = PongGame()
+    game = PongGame(False,True)
     dt = 1/60
     while True:
+        if watch:
+            game.clock.tick(60)
         game_frame_cnt+=1
         state_l,action_l = get_state_action_pair(agent_l,game,game.paddle_l)
         state_r,action_r = get_state_action_pair(agent_r,game,game.paddle_r)
@@ -67,10 +70,10 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
         next_state_l,_ = get_state_action_pair(agent_l,game,game.paddle_l)
         next_state_r,_ = get_state_action_pair(agent_r,game,game.paddle_r)
 
-        if state_l: agent_l.remember(state_l,action_l,reward_l,next_state_l,done)
-        if state_r: agent_r.remember(state_r,action_r,reward_r,next_state_r,done)
+        if state_l is not None: agent_l.remember(state_l,action_l,reward_l,next_state_l,done)
+        if state_r is not None: agent_r.remember(state_r,action_r,reward_r,next_state_r,done)
 
-        if game_frame_cnt%8:
+        if game_frame_cnt%8 == 0:
             agent_l and agent_l.train_memory()
             agent_r and agent_r.train_memory()
         
@@ -78,23 +81,30 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
 
         if done:
             game_cnt+=1
-            agent_l and agent_l.copy_network()
-            agent_r and agent_r.copy_network()
+            copy_network_change_epsilon(agent_l)
+            copy_network_change_epsilon(agent_r)
+                
             # plotting
 
 
 
 def get_state_action_pair(agent,game,paddle):
-    if agent:
+    if agent is not None and paddle is not None:
         state = agent.get_state(game,paddle)
         action = agent.get_action(state)
     else: state,action = None,None
     return  state,action
 
+def copy_network_change_epsilon(agent):
+    if agent is not None:
+        agent.copy_network()
+        if agent.epsilon > 0.01:
+            agent.epsilon -= 0.005
+
 if __name__ == '__main__':
-    agent_l = Agent()
+    # agent_l = Agent()
     agent_r = Agent()
-    train(agent_l,agent_r)
+    train(None,agent_r)
     
 
          
