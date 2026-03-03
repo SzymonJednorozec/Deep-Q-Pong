@@ -45,8 +45,8 @@ class Qtrainer:
         reward = torch.tensor(reward, dtype=torch.float)
 
         pred = self.model(state)
-        target = pred.copy()
-        for idx in len(target):
+        target = pred.clone()
+        for idx in range(len(done)):
             action_id = torch.argmax(action[idx]).item()
             y = reward[idx]
             if not done[idx]:
