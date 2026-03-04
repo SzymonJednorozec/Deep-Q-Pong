@@ -51,21 +51,25 @@ class Agent:
         
         return final_move
     
+    def save_model(self):
+        self.model.save()
+    
 def train(agent_l:Agent=None,agent_r:Agent=None):
     watch=True
     game_cnt = 0
     game_frame_cnt = 0
     game = PongGame(False,True)
     dt = 1/60
+    record=0
     while True:
         if watch:
-            game.clock.tick(500)
+            game.clock.tick(800)
         game_frame_cnt+=1
         state_l,action_l = get_state_action_pair(agent_l,game,game.paddle_l)
         state_r,action_r = get_state_action_pair(agent_r,game,game.paddle_r)
 
         # return reward_l,reward_r, game_over, self.score_l, self.score_r
-        reward_l,reward_r, done, score_l, score_r = game.play_step(dt,action_l,action_r)
+        reward_l,reward_r, done, score_l, score_r, points_l, points_r = game.play_step(dt,action_l,action_r)
 
         next_state_l,_ = get_state_action_pair(agent_l,game,game.paddle_l)
         next_state_r,_ = get_state_action_pair(agent_r,game,game.paddle_r)
@@ -73,7 +77,7 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
         if state_l is not None: agent_l.remember(state_l,action_l,reward_l,next_state_l,done)
         if state_r is not None: agent_r.remember(state_r,action_r,reward_r,next_state_r,done)
 
-        if game_frame_cnt%8 == 0:
+        if game_frame_cnt%12 == 0:
             agent_l and agent_l.train_memory()
             agent_r and agent_r.train_memory()
         
@@ -81,8 +85,8 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
 
         if done:
             game_cnt+=1
-            copy_network_change_epsilon(agent_l)
-            copy_network_change_epsilon(agent_r)
+            record = copy_network_change_epsilon(agent_l,points_l,record)
+            record = copy_network_change_epsilon(agent_r,points_r,record)
                 
             # plotting
 
@@ -95,11 +99,15 @@ def get_state_action_pair(agent,game,paddle):
     else: state,action = None,None
     return  state,action
 
-def copy_network_change_epsilon(agent):
+def copy_network_change_epsilon(agent,points,record):
     if agent is not None:
         agent.copy_network()
         if agent.epsilon > 0.01:
-            agent.epsilon -= 0.005
+            agent.epsilon -= 0.0025
+        if points>record:
+            agent.save_model()
+            record=points
+    return record
 
 if __name__ == '__main__':
     # agent_l = Agent()
