@@ -64,6 +64,7 @@ class PongGame:
     def play_step(self,dt,action_l=None,action_r=None):
         game_over = False
         reward_l , reward_r = 0,0
+        last_points_r,last_points_l = self.points_r,self.points_l
         tmpl,tmpr = 0,0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -78,21 +79,22 @@ class PongGame:
             tmpl,tmpr = self._check_score()
             reward_l += tmpl
             reward_r += tmpr
+            last_points_r,last_points_l = self.points_r,self.points_l
         else: 
             game_over = True
             self.full_reset()
 
         self._draw()
-        return reward_l,reward_r, game_over, self.score_l, self.score_r
+        return reward_l,reward_r, game_over, self.score_l, self.score_r, last_points_l, last_points_r
 
     def _check_score(self):
         if self.paddle_l.create and self.ball.pos.x < self.paddle_offset:
             self.score_r += 1
-            reward_l,reward_r = -10,10
+            reward_l,reward_r = -10,0
             self.winner = "RIGHT"
         elif self.paddle_r.create and self.ball.pos.x > WIDTH - self.paddle_offset:
             self.score_l += 1
-            reward_l,reward_r = 10,-10
+            reward_l,reward_r = 0,-10
             self.winner = "LEFT"
         else: reward_l,reward_r = 0,0
         
@@ -116,6 +118,10 @@ class PongGame:
         self.display.blit(score_r, (WIDTH * 3 // 4, 50))
         self.display.blit(points_l, (WIDTH // 4, 80))
         self.display.blit(points_r, (WIDTH * 3 // 4, 80))
+
+        fps_text = f"FPS: {self.clock.get_fps():.1f}"
+        fps_surf = font.render(fps_text, True, RED)
+        self.display.blit(fps_surf, (10, 10))
         
         # if self.winner:
         #     txt = f"PLAYER {self.winner} WINS!"
