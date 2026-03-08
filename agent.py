@@ -4,6 +4,7 @@ import numpy as np
 from collections import deque
 from ai_pong import PongGame
 from model import   Qtrainer, Linear_Qnet
+from plot_graph import plot
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 64
@@ -11,7 +12,7 @@ LR = 0.001
 
 class Agent:
     def __init__(self):
-        self.n_games = 0
+        # self.n_games = 0
         self.epsilon = 1
         self.gamma = 0.9
         self.memory = deque(maxlen=MAX_MEMORY)
@@ -61,9 +62,14 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
     game = PongGame(False,True)
     dt = 1/60
     record=0
+
+    plot_scores = []
+    plot_mean_scores = []
+    total_score=0
+
     while True:
         if watch:
-            game.clock.tick(800)
+            game.clock.tick(500)
         game_frame_cnt+=1
         state_l,action_l = get_state_action_pair(agent_l,game,game.paddle_l)
         state_r,action_r = get_state_action_pair(agent_r,game,game.paddle_r)
@@ -87,6 +93,12 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
             game_cnt+=1
             record = copy_network_change_epsilon(agent_l,points_l,record)
             record = copy_network_change_epsilon(agent_r,points_r,record)
+
+            plot_scores.append(points_r)
+            total_score+=points_r
+            plot_mean_scores.append(total_score/game_cnt)
+            plot(plot_scores,plot_mean_scores)
+
                 
             # plotting
 
@@ -103,7 +115,7 @@ def copy_network_change_epsilon(agent,points,record):
     if agent is not None:
         agent.copy_network()
         if agent.epsilon > 0.01:
-            agent.epsilon -= 0.0025
+            agent.epsilon -= 0.0005
         if points>record:
             agent.save_model()
             record=points
