@@ -4,6 +4,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 import copy
+import numpy as np
 
 class Linear_Qnet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -38,26 +39,29 @@ class Qtrainer:
     def update_target_model(self):
         self.target_model.load_state_dict(self.model.state_dict())
 
-    def train_step(self,state, action, reward, next_state, done):
-        state = torch.tensor(state, dtype=torch.float)
-        next_state = torch.tensor(next_state, dtype=torch.float)
-        action = torch.tensor(action, dtype=torch.long)
-        reward = torch.tensor(reward, dtype=torch.float)
+    def train_step(self, state, action, reward, next_state, done):
+        state = torch.tensor(np.array(state), dtype=torch.float)
+        next_state = torch.tensor(np.array(next_state), dtype=torch.float)
+        action = torch.tensor(np.array(action), dtype=torch.long)
+        reward = torch.tensor(np.array(reward), dtype=torch.float)
+        done = torch.tensor(np.array(done), dtype=torch.bool)
 
         pred = self.model(state)
         target = pred.clone()
-        for idx in range(len(done)):
-            action_id = torch.argmax(action[idx]).item()
-            y = reward[idx]
-            if not done[idx]:
-                y = reward[idx] + self.gamma*torch.max(self.target_model(next_state[idx]))
 
-            target[idx][action_id] = y
+        with torch.no_grad():
+            next_q_values = self.target_model(next_state)
+            max_next_q = torch.max(next_q_values, dim=1)[0]
         
+        # Równanie Bellmana w jednej linii!
+        Q_new = reward + self.gamma * max_next_q * (~done)
+
+        action_indices = torch.argmax(action, dim=1)
+        target[range(len(target)), action_indices] = Q_new
+
         self.optimizer.zero_grad()
         loss = self.criterion(target, pred)
         loss.backward()
-
         self.optimizer.step()
 
 
