@@ -79,6 +79,9 @@ class PongGame:
             tmpl,tmpr = self._check_score()
             reward_l += tmpl
             reward_r += tmpr
+            tmpl,tmpr = self.ball_distance_penalty(self.paddle_l),self.ball_distance_penalty(self.paddle_r)
+            reward_l += tmpl
+            reward_r += tmpr
             last_points_r,last_points_l = self.points_r,self.points_l
         else: 
             game_over = True
@@ -99,6 +102,13 @@ class PongGame:
         else: reward_l,reward_r = 0,0
         
         return reward_l,reward_r
+    
+    def ball_distance_penalty(self, paddle):
+        if paddle is not None:
+            distance_penalty = abs(paddle.pos.y - self.ball.pos.y) / HEIGHT
+            reward = -distance_penalty * 0.1
+            return reward
+        return 0
 
     def _move(self,dt,action_l,action_r):
         if action_l:    self.paddle_l.move_AI(dt,action_l)
