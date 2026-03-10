@@ -1,4 +1,5 @@
 import torch
+import torch.onnx
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
@@ -24,6 +25,34 @@ class Linear_Qnet(nn.Module):
 
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
+
+    def save_onnx(self, file_name='model.onnx'):
+        model_folder_path = './model'
+        if not os.path.exists(model_folder_path):
+            os.makedirs(model_folder_path)
+        
+        file_path = os.path.join(model_folder_path, file_name)
+        
+        self.eval() 
+        
+        dummy_input = torch.randn(1, self.linear1.in_features)
+        
+        try:
+            torch.onnx.export(
+                self,
+                dummy_input,
+                file_path,
+                export_params=True,
+                opset_version=18,  
+                do_constant_folding=True,
+                input_names=['input'],
+                output_names=['output'],
+                dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}}
+            )
+        except Exception as e:
+            print(f"Błąd eksportu: {e}")
+        finally:
+            self.train()
     
 
 

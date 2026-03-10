@@ -7,7 +7,7 @@ from model import   Qtrainer, Linear_Qnet
 from plot_graph import plot
 
 MAX_MEMORY = 100_000
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 LR = 0.001
 
 class Agent:
@@ -54,6 +54,7 @@ class Agent:
     
     def save_model(self):
         self.model.save()
+        self.model.save_onnx()
     
 def train(agent_l:Agent=None,agent_r:Agent=None):
     watch=True
