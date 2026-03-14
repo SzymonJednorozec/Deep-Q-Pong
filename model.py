@@ -57,8 +57,9 @@ class Linear_Qnet(nn.Module):
 
 
 class Qtrainer:
-    def __init__(self,model,lr,gamma):
+    def __init__(self,model,lr,gamma,tau=0.05):
         self.lr = lr
+        self.tau = tau
         self.gamma = gamma
         self.model = model
         self.target_model = copy.deepcopy(model)
@@ -67,6 +68,10 @@ class Qtrainer:
     
     def update_target_model(self):
         self.target_model.load_state_dict(self.model.state_dict())
+    
+    def soft_update_target_model(self):
+        for target_param, local_param in zip(self.target_model.parameters(), self.model.parameters()):
+            target_param.data.copy_(self.tau * local_param.data + (1.0 - self.tau) * target_param.data)
 
     def train_step(self, state, action, reward, next_state, done):
         state = torch.tensor(np.array(state), dtype=torch.float)
@@ -79,11 +84,13 @@ class Qtrainer:
         target = pred.clone()
 
         with torch.no_grad():
-            next_q_values = self.target_model(next_state)
-            max_next_q = torch.max(next_q_values, dim=1)[0]
+            next_q_max_values = self.model(next_state)
+            next_q_ids = torch.argmax(next_q_max_values, dim=1)
+
+            next_q_true_vals = self.target_model(next_state)
+            estimated_next_q =  next_q_true_vals[torch.arange(len(done)),next_q_ids]
         
-        # Równanie Bellmana w jednej linii!
-        Q_new = reward + self.gamma * max_next_q * (~done)
+        Q_new = reward + self.gamma * estimated_next_q * (~done)
 
         action_indices = torch.argmax(action, dim=1)
         target[range(len(target)), action_indices] = Q_new
