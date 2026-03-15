@@ -74,6 +74,7 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
 
     plot_scores = []
     plot_mean_scores = []
+    plot_epsilons = []
     total_score=0
 
     while True:
@@ -105,10 +106,10 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
             plot_scores.append(points_r)
             total_score+=points_r
             plot_mean_scores.append(total_score/game_cnt)
-            plot(plot_scores,plot_mean_scores)
+            plot_epsilons.append(agent_r.epsilon)
+            plot(plot_scores,plot_mean_scores,plot_epsilons)
 
                 
-            # plotting
 
 
 
@@ -131,7 +132,7 @@ def copy_network_change_epsilon(agent: Agent,points,game_cnt):
         elif game_cnt%100 == 0:
             agent.save_model()
 
-        if agent.games_from_last_record>100:
+        if agent.games_from_last_record>200:
             agent.games_from_last_record=0
             agent.epsilon+=0.2
         else:
