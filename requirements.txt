@@ -1,0 +1,10 @@
+torch                       
+numpy                       
+onnx                        
+onnxruntime                 
+onnxscript                  
+
+pygame                      
+matplotlib                  
+
+streamlit                   
