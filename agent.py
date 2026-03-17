@@ -13,12 +13,17 @@ LR = 0.001
 class Agent:
     def __init__(self):
         # self.n_games = 0
-        self.epsilon = 1
         self.gamma = 0.9
         self.memory = deque(maxlen=MAX_MEMORY)
         self.model = Linear_Qnet(5,128,3)
         self.trainer = Qtrainer(self.model,LR,self.gamma)
-
+        #epsilon decay 
+        self.epsilon = 1
+        self.min_epsilon = 0.1
+        self.epsilon_decay = 0.995
+        
+        self.games_from_last_record = 0
+        self.record = 0
     
     def get_state(self,game,paddle):
         state = game.get_state(paddle)
@@ -35,6 +40,9 @@ class Agent:
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
+    
+    def soft_update(self):
+        self.trainer.soft_update_target_model()
     
     def copy_network(self):
         self.trainer.update_target_model()
@@ -62,15 +70,16 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
     game_frame_cnt = 0
     game = PongGame(False,True)
     dt = 1/60
-    record=0
+    
 
     plot_scores = []
     plot_mean_scores = []
+    plot_epsilons = []
     total_score=0
 
     while True:
-        if watch:
-            game.clock.tick(500)
+        game.clock.tick(500)
+
         game_frame_cnt+=1
         state_l,action_l = get_state_action_pair(agent_l,game,game.paddle_l)
         state_r,action_r = get_state_action_pair(agent_r,game,game.paddle_r)
@@ -85,23 +94,22 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
         if state_r is not None: agent_r.remember(state_r,action_r,reward_r,next_state_r,done)
 
         if game_frame_cnt%12 == 0:
-            agent_l and agent_l.train_memory()
-            agent_r and agent_r.train_memory()
-        
+            train_agent(agent_l)
+            train_agent(agent_r)
 
 
         if done:
             game_cnt+=1
-            record = copy_network_change_epsilon(agent_l,points_l,record)
-            record = copy_network_change_epsilon(agent_r,points_r,record)
+            copy_network_change_epsilon(agent_l,points_l,game_cnt)
+            copy_network_change_epsilon(agent_r,points_r,game_cnt)
 
             plot_scores.append(points_r)
             total_score+=points_r
             plot_mean_scores.append(total_score/game_cnt)
-            plot(plot_scores,plot_mean_scores)
+            plot_epsilons.append(agent_r.epsilon)
+            plot(plot_scores,plot_mean_scores,plot_epsilons)
 
                 
-            # plotting
 
 
 
@@ -112,15 +120,29 @@ def get_state_action_pair(agent,game,paddle):
     else: state,action = None,None
     return  state,action
 
-def copy_network_change_epsilon(agent,points,record):
+def copy_network_change_epsilon(agent: Agent,points,game_cnt):
     if agent is not None:
-        agent.copy_network()
-        if agent.epsilon > 0.01:
-            agent.epsilon -= 0.0005
-        if points>record:
+        if agent.epsilon > agent.min_epsilon:
+            agent.epsilon *= agent.epsilon_decay
+
+        if points>agent.record:
             agent.save_model()
-            record=points
-    return record
+            agent.record=points
+            agent.games_from_last_record=0
+        elif game_cnt%100 == 0:
+            agent.save_model()
+
+        if agent.games_from_last_record>200:
+            agent.games_from_last_record=0
+            agent.epsilon+=0.2
+        else:
+            agent.games_from_last_record+=1
+        print(agent.epsilon)
+
+def train_agent(agent):
+    if agent is not None:
+        agent.train_memory()
+        agent.soft_update()
 
 if __name__ == '__main__':
     # agent_l = Agent()

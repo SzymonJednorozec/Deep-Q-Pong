@@ -1,3 +1,4 @@
+# TODO - naprawic kolizje, czasami agent dostaje 2 pkt czasami nie zalicza odbicia
 import pygame, sys, random,math
 from pygame import Vector2 as Vec2
 import numpy as np
@@ -106,7 +107,7 @@ class PongGame:
     def ball_distance_penalty(self, paddle):
         if paddle is not None:
             distance_penalty = abs(paddle.pos.y - self.ball.pos.y) / HEIGHT
-            reward = -distance_penalty * 0.1
+            reward = -distance_penalty 
             return reward
         return 0
 
