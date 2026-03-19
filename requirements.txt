@@ -3,8 +3,7 @@ numpy
 onnx                        
 onnxruntime                 
 onnxscript                  
-
 pygame                      
 matplotlib                  
-
-streamlit                   
+streamlit
+IPython                   
