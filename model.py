@@ -25,6 +25,16 @@ class Linear_Qnet(nn.Module):
 
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
+    
+    def load(self, path='./model/model.pth'):
+        if os.path.exists(path):
+            weights = torch.load(path)
+            self.load_state_dict(weights)
+            print("Model was succesfully loaded")
+        else:
+            print(f"File not found {path}")
+
+
 
     def save_onnx(self, file_name='model.onnx'):
         model_folder_path = './model'
@@ -50,7 +60,7 @@ class Linear_Qnet(nn.Module):
                 dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}}
             )
         except Exception as e:
-            print(f"Błąd eksportu: {e}")
+            print(f"Error durning export: {e}")
         finally:
             self.train()
     

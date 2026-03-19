@@ -63,13 +63,20 @@ class Agent:
     def save_model(self):
         self.model.save()
         self.model.save_onnx()
+
+    def load_model(self):
+        self.model.load()
     
 def train(agent_l:Agent=None,agent_r:Agent=None):
+    
+    if agent_l is not None: agent_l.load_model() 
+    if agent_r is not None: agent_r.load_model()
+
     watch=True
     game_cnt = 0
     game_frame_cnt = 0
     game = PongGame(False,True)
-    dt = 1/60
+    dt = 1/180
     
 
     plot_scores = []
@@ -78,7 +85,7 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
     total_score=0
 
     while True:
-        game.clock.tick(500)
+        game.clock.tick(0)
 
         game_frame_cnt+=1
         state_l,action_l = get_state_action_pair(agent_l,game,game.paddle_l)
