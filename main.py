@@ -3,10 +3,8 @@ from ai_pong import PongGame
 from agent import Agent
 from app_types import PlayerType, AppConfig, GameResult
 import sys
+
 # TODO it strongly depends on w and h set up in ai_pong.py
-# TODO zapisywanie podczas treningu, plotting
-# TODO setup musi robic wiecej
-# TODO ai dla lewej paletki
 WIDTH = 1280
 HEIGHT = 720
 
@@ -80,8 +78,22 @@ class App:
             action = self.agent.get_action(state)
         game.game_loop(self.delta,events,None,action)
     
-    def handle_menu(self,events):
-        pass
+    def handle_menu(self, events):
+        if len(self.games) > 0:
+            self.games[0]._draw(alpha=100) 
+        else:
+            self.screen.fill((20, 20, 20))
+
+        font = pygame.font.SysFont("arial", 40)
+        txt = font.render("PAUSED - PRESS 'S' TO SAVE OR 'P' TO RESUME", True, (255, 255, 255))
+        self.screen.blit(txt, (WIDTH//2 - txt.get_width()//2, HEIGHT//2))
+
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+                if self.agent is not None:
+                    self.agent.model.save()
+                    self.agent.model.save_onnx()
+                    print(f"--- MODEL SAVED: {self.config.save_path} ---")
 
     def main_loop(self):
         frame_count = 0
@@ -93,7 +105,11 @@ class App:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                    self.paused = not self.paused
+                    if self.state in ["TRAIN","PLAY"]:
+                        self.previous_state = self.state
+                        self.state = "MENU"
+                    elif self.state == "MENU" and hasattr(self, 'previous_state'):
+                        self.state = self.previous_state
 
             if self.state == "MENU":
                 self.handle_menu(events)
