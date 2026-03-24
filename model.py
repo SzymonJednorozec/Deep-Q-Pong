@@ -18,13 +18,11 @@ class Linear_Qnet(nn.Module):
         x = self.linear2(x)
         return x
     
-    def save(self, file_name='model.pth'):
-        model_folder_path = './model'
-        if not os.path.exists(model_folder_path):
-            os.makedirs(model_folder_path)
-
-        file_name = os.path.join(model_folder_path, file_name)
-        torch.save(self.state_dict(), file_name)
+    def save(self, file_path='./model/model.pth'):
+        folder_path = os.path.dirname(file_path)
+        if folder_path: 
+            os.makedirs(folder_path, exist_ok=True)
+        torch.save(self.state_dict(), file_path)
     
     def load(self, path='./model/model.pth'):
         if os.path.exists(path):
@@ -36,12 +34,11 @@ class Linear_Qnet(nn.Module):
 
 
 
-    def save_onnx(self, file_name='model.onnx'):
-        model_folder_path = './model'
-        if not os.path.exists(model_folder_path):
-            os.makedirs(model_folder_path)
-        
-        file_path = os.path.join(model_folder_path, file_name)
+    def save_onnx(self, file_path='./model/model.onnx'):
+        folder_path = os.path.dirname(file_path)
+        if folder_path: 
+            os.makedirs(folder_path, exist_ok=True)
+        torch.save(self.state_dict(), file_path)
         
         self.eval() 
         

@@ -25,6 +25,7 @@ class AppConfig:
         self.mode = "TRAIN" # TRAIN / PLAY
         self.save_path = "model/model.pth"
         self.load_path = "model/model.pth"
+        self.save_onnx_path = "model/model.onnx"
         self.left_player = PlayerType.NONE
         self.right_player = PlayerType.AI
 
@@ -35,7 +36,9 @@ class AppConfig:
             self.mode = data.get("mode", self.mode)
             self.save_path = data.get("model_save_path", self.save_path)
             self.load_path = data.get("model_load_path", self.load_path)
-            
+            self.load_path = data.get("model_save_onnx_path", self.save_onnx_path)
+
+
             type_map = {
                 "HUMAN": PlayerType.HUMAN,
                 "AI": PlayerType.AI,
