@@ -5,6 +5,7 @@ from app_types import PlayerType, AppConfig, GameResult
 import sys
 
 # TODO it strongly depends on w and h set up in ai_pong.py
+# TODO przy ustawieniu ai na prawej paletce w play, agent sie nie tworzy, nie ma napisow przy wygranej grze w play mode
 WIDTH = 1280
 HEIGHT = 720
 
@@ -26,7 +27,15 @@ class App:
         right_paddle = False
         if self.config.right_player != PlayerType.NONE: right_paddle = True
 
-        self.games = [PongGame(self.screen,left_paddle,right_paddle) for i in range(self.config.instances)]
+        self.games = []
+        for i in range(self.config.instances):
+            is_main = (i == 0)
+            g = PongGame(self.screen, left_paddle, right_paddle,
+                         alpha = 255 if is_main else 50,
+                         draw_ui = is_main,
+                         clear_bg = is_main)
+            self.games.append(g)
+
         self.state = self.config.mode
 
         if self.config.mode == "PLAY":
@@ -48,17 +57,9 @@ class App:
             state = self.agent.get_state(game,game.paddle_r)
             action = self.agent.get_action(state)
 
-            if i == 0:
-                alpha_val = 255
-                draw_ui_val = True
-                clear_bg_val = True  
-            else:
-                alpha_val = 50       
-                draw_ui_val = False
-                clear_bg_val = False
 
             # reward_l,reward_r, done, score_l, score_r, points_l, points_r
-            results: GameResult = game.play_step(self.delta,events, None, action,alpha=alpha_val, draw_ui=draw_ui_val, clear_bg=clear_bg_val)
+            results: GameResult = game.play_step(self.delta, None, action)
             next_state = self.agent.get_state(game, game.paddle_r)
         
             self.agent.remember(state, action, results.reward_r, next_state, results.done)
@@ -80,7 +81,7 @@ class App:
     
     def handle_menu(self, events):
         if len(self.games) > 0:
-            self.games[0]._draw(alpha=100) 
+            self.games[0]._draw() 
         else:
             self.screen.fill((20, 20, 20))
 
@@ -91,9 +92,9 @@ class App:
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
                 if self.agent is not None:
-                    self.agent.model.save()
-                    self.agent.model.save_onnx()
-                    print(f"--- MODEL SAVED: {self.config.save_path} ---")
+                    self.agent.model.save(self.config.save_path)
+                    self.agent.model.save_onnx(self.config.save_onnx_path)
+                    print(f"--- MODEL SAVED ---")
 
     def main_loop(self):
         frame_count = 0
