@@ -31,6 +31,7 @@ class PongGame:
         self.running = True
         self.winner = None
         self.game_active = True
+
         # ------------------
         
         self.score_l = 0
@@ -58,15 +59,42 @@ class PongGame:
         self.paddle_r.reset()
         self.game_active = False
     
-    def _draw(self):
-        self.display.fill(BLACK)
-        self._draw_ui()
-        self.paddle_l.draw()
-        self.paddle_r.draw()
-        self.ball.draw()
+    def _draw(self, alpha=255, draw_ui=True, clear_bg=True):
+        if clear_bg:
+            self.display.fill(BLACK)
+
+        temp_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        
+        paddle_color = (255, 255, 255, alpha)
+        ball_color = (255, 255, 255, alpha)
+
+        if self.paddle_l.create:
+            pygame.draw.rect(temp_surface, paddle_color, 
+                             pygame.Rect(self.paddle_l.pos.x - (self.paddle_l.w/2),
+                                         self.paddle_l.pos.y - (self.paddle_l.h/2),
+                                         self.paddle_l.w, self.paddle_l.h))
+        if self.paddle_r.create:
+            pygame.draw.rect(temp_surface, paddle_color, 
+                             pygame.Rect(self.paddle_r.pos.x - (self.paddle_r.w/2),
+                                         self.paddle_r.pos.y - (self.paddle_r.h/2),
+                                         self.paddle_r.w, self.paddle_r.h))
+            
+        pygame.draw.circle(temp_surface, ball_color, self.ball.pos, self.ball.r)
+
+        self.display.blit(temp_surface, (0, 0))
+
+        if draw_ui:
+            self._draw_ui()
+
+    # def _draw(self):
+    #     self.display.fill(BLACK)
+    #     self._draw_ui()
+    #     self.paddle_l.draw()
+    #     self.paddle_r.draw()
+    #     self.ball.draw()
         # pygame.display.flip()
 
-    def play_step(self,dt,events,action_l=None,action_r=None):
+    def play_step(self,dt,events,action_l=None,action_r=None,alpha=255, draw_ui=True, clear_bg=True):
         game_over = False
         reward_l , reward_r = 0,0
         last_points_r,last_points_l = self.points_r,self.points_l
@@ -89,10 +117,10 @@ class PongGame:
             self.full_reset()
             self.game_active = True
 
-        self._draw()
+        self._draw(alpha, draw_ui, clear_bg)
         return GameResult(reward_l,reward_r, game_over, self.score_l, self.score_r, last_points_l, last_points_r)
 
-    def game_loop(self,dt,events,action_l=None,action_r=None):
+    def game_loop(self,dt,events,action_l=None,action_r=None,alpha=255, draw_ui=True, clear_bg=True):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 if self.winner: self.reset_game()
@@ -103,7 +131,7 @@ class PongGame:
             self._move(dt,action_l,action_r)
             self._check_score()
 
-        self._draw()
+        self._draw(alpha, draw_ui, clear_bg)
 
     def _check_score(self):
         if self.paddle_l.create and self.ball.pos.x < self.paddle_offset:
@@ -148,13 +176,13 @@ class PongGame:
         fps_surf = font.render(fps_text, True, RED)
         self.display.blit(fps_surf, (10, 10))
         
-        if self.winner:
-            txt = f"PLAYER {self.winner} WINS!"
-            win_surf = large_font.render(txt, True, RED)
-            sub_surf = font.render("PRESS SPACE TO RESTART", True, WHITE)
-            self.display.blit(win_surf, (WIDTH//2 - win_surf.get_width()//2, HEIGHT//2 - 100))
-            self.display.blit(sub_surf, (WIDTH//2 - sub_surf.get_width()//2, HEIGHT//2))
-        elif not self.game_active:
+        # if self.winner:
+        #     txt = f"PLAYER {self.winner} WINS!"
+        #     win_surf = large_font.render(txt, True, RED)
+        #     sub_surf = font.render("PRESS SPACE TO RESTART", True, WHITE)
+        #     self.display.blit(win_surf, (WIDTH//2 - win_surf.get_width()//2, HEIGHT//2 - 100))
+        #     self.display.blit(sub_surf, (WIDTH//2 - sub_surf.get_width()//2, HEIGHT//2))
+        if not self.game_active:
             msg = font.render("PRESS SPACE TO SERVE", True, WHITE)
             self.display.blit(msg, (WIDTH//2 - msg.get_width()//2, HEIGHT//2 + 50))
     

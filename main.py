@@ -46,12 +46,21 @@ class App:
     
     def handle_train(self,events,frame_count): #in training mode only right paddle
         frame_count+=1
-        for game in self.games:
+        for i,game in enumerate(self.games):
             state = self.agent.get_state(game,game.paddle_r)
             action = self.agent.get_action(state)
 
+            if i == 0:
+                alpha_val = 255
+                draw_ui_val = True
+                clear_bg_val = True  
+            else:
+                alpha_val = 50       
+                draw_ui_val = False
+                clear_bg_val = False
+
             # reward_l,reward_r, done, score_l, score_r, points_l, points_r
-            results: GameResult = game.play_step(self.delta,events, None, action)
+            results: GameResult = game.play_step(self.delta,events, None, action,alpha=alpha_val, draw_ui=draw_ui_val, clear_bg=clear_bg_val)
             next_state = self.agent.get_state(game, game.paddle_r)
         
             self.agent.remember(state, action, results.reward_r, next_state, results.done)
@@ -95,11 +104,11 @@ class App:
             
             pygame.display.flip()
 
-            for game in self.games:
-                if self.state == "PLAY":
-                    game.clock.tick(60) 
-                else:
-                    game.clock.tick(0)
+
+            if self.state == "PLAY":
+                self.games[0].clock.tick(60)
+            else:
+                self.games[0].clock.tick(500)
 
 
 if __name__=="__main__":
