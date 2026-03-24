@@ -5,6 +5,7 @@ from collections import deque
 from ai_pong import PongGame
 from model import   Qtrainer, Linear_Qnet
 from plot_graph import plot
+from app_types import GameResult
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 128
@@ -91,27 +92,28 @@ def train(agent_l:Agent=None,agent_r:Agent=None):
         state_l,action_l = get_state_action_pair(agent_l,game,game.paddle_l)
         state_r,action_r = get_state_action_pair(agent_r,game,game.paddle_r)
 
-        # return reward_l,reward_r, game_over, self.score_l, self.score_r
-        reward_l,reward_r, done, score_l, score_r, points_l, points_r = game.play_step(dt,action_l,action_r)
+        # reward_l,reward_r, done, score_l, score_r, points_l, points_r
+        results: GameResult = game.play_step(dt,action_l,action_r)
+
 
         next_state_l,_ = get_state_action_pair(agent_l,game,game.paddle_l)
         next_state_r,_ = get_state_action_pair(agent_r,game,game.paddle_r)
 
-        if state_l is not None: agent_l.remember(state_l,action_l,reward_l,next_state_l,done)
-        if state_r is not None: agent_r.remember(state_r,action_r,reward_r,next_state_r,done)
+        if state_l is not None: agent_l.remember(state_l,action_l,results.reward_l,next_state_l,results.done)
+        if state_r is not None: agent_r.remember(state_r,action_r,results.reward_r,next_state_r,results.done)
 
         if game_frame_cnt%12 == 0:
             train_agent(agent_l)
             train_agent(agent_r)
 
 
-        if done:
+        if results.done:
             game_cnt+=1
-            copy_network_change_epsilon(agent_l,points_l,game_cnt)
-            copy_network_change_epsilon(agent_r,points_r,game_cnt)
+            copy_network_change_epsilon(agent_l,results.points_l,game_cnt)
+            copy_network_change_epsilon(agent_r,results.points_r,game_cnt)
 
-            plot_scores.append(points_r)
-            total_score+=points_r
+            plot_scores.append(results.points_r)
+            total_score+=results.points_r
             plot_mean_scores.append(total_score/game_cnt)
             plot_epsilons.append(agent_r.epsilon)
             plot(plot_scores,plot_mean_scores,plot_epsilons)

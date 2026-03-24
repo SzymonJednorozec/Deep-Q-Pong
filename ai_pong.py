@@ -2,6 +2,7 @@
 import pygame, sys, random,math
 from pygame import Vector2 as Vec2
 import numpy as np
+from app_types import GameResult
 
 pygame.init()
 font = pygame.font.Font('arial.ttf', 25)
@@ -12,7 +13,7 @@ WINNING_SCORE = 5
 WIDTH = 1280
 HEIGHT = 720
 
-SPEED = 100
+SPEED = 60
 
 PADDLE_SPEED = 300
 PADDLE_OFFSET = 40
@@ -22,12 +23,15 @@ SPEED_GROW_RATE = 1.005
 WHITE, BLACK, GRAY, RED = (255, 255, 255), (0, 0, 0), (150, 150, 150), (255, 50, 50)
 
 class PongGame:
-    def __init__(self,left=True,right=True):
+    def __init__(self,screen,left=True,right=True):
         self.paddle_offset = PADDLE_OFFSET 
-        self.display = pygame.display.set_mode((WIDTH,HEIGHT))
+        self.display = screen
         self.clock = pygame.time.Clock()
+        # flags
         self.running = True
         self.winner = None
+        self.game_active = True
+        # ------------------
         
         self.score_l = 0
         self.score_r = 0
@@ -60,17 +64,13 @@ class PongGame:
         self.paddle_l.draw()
         self.paddle_r.draw()
         self.ball.draw()
-        pygame.display.flip()
+        # pygame.display.flip()
 
-    def play_step(self,dt,action_l=None,action_r=None):
+    def play_step(self,dt,events,action_l=None,action_r=None):
         game_over = False
         reward_l , reward_r = 0,0
         last_points_r,last_points_l = self.points_r,self.points_l
         tmpl,tmpr = 0,0
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
 
         if not self.winner:
             tmpl,tmpr = self._check_collisions(self.ball,self.paddle_l,self.paddle_r)
@@ -87,9 +87,23 @@ class PongGame:
         else: 
             game_over = True
             self.full_reset()
+            self.game_active = True
 
         self._draw()
-        return reward_l,reward_r, game_over, self.score_l, self.score_r, last_points_l, last_points_r
+        return GameResult(reward_l,reward_r, game_over, self.score_l, self.score_r, last_points_l, last_points_r)
+
+    def game_loop(self,dt,events,action_l=None,action_r=None):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if self.winner: self.reset_game()
+                else: self.game_active = True
+
+        if self.game_active and not self.winner:
+            self._check_collisions(self.ball,self.paddle_l,self.paddle_r)
+            self._move(dt,action_l,action_r)
+            self._check_score()
+
+        self._draw()
 
     def _check_score(self):
         if self.paddle_l.create and self.ball.pos.x < self.paddle_offset:
@@ -134,15 +148,15 @@ class PongGame:
         fps_surf = font.render(fps_text, True, RED)
         self.display.blit(fps_surf, (10, 10))
         
-        # if self.winner:
-        #     txt = f"PLAYER {self.winner} WINS!"
-        #     win_surf = large_font.render(txt, True, RED)
-        #     sub_surf = font.render("PRESS SPACE TO RESTART", True, WHITE)
-        #     self.display.blit(win_surf, (WIDTH//2 - win_surf.get_width()//2, HEIGHT//2 - 100))
-        #     self.display.blit(sub_surf, (WIDTH//2 - sub_surf.get_width()//2, HEIGHT//2))
-        # elif not self.game_active:
-        #     msg = font.render("PRESS SPACE TO SERVE", True, WHITE)
-        #     self.display.blit(msg, (WIDTH//2 - msg.get_width()//2, HEIGHT//2 + 50))
+        if self.winner:
+            txt = f"PLAYER {self.winner} WINS!"
+            win_surf = large_font.render(txt, True, RED)
+            sub_surf = font.render("PRESS SPACE TO RESTART", True, WHITE)
+            self.display.blit(win_surf, (WIDTH//2 - win_surf.get_width()//2, HEIGHT//2 - 100))
+            self.display.blit(sub_surf, (WIDTH//2 - sub_surf.get_width()//2, HEIGHT//2))
+        elif not self.game_active:
+            msg = font.render("PRESS SPACE TO SERVE", True, WHITE)
+            self.display.blit(msg, (WIDTH//2 - msg.get_width()//2, HEIGHT//2 + 50))
     
     def _check_collisions(self,ball,paddle_l,paddle_r):
         #ceil
