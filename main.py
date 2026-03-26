@@ -1,11 +1,11 @@
 import pygame
 from ai_pong import PongGame
 from agent import Agent
-from app_types import PlayerType, AppConfig, GameResult
+from app_types import PlayerType, AppConfig, GameResult, GameState
 import sys
 
 # TODO it strongly depends on w and h set up in ai_pong.py
-# TODO przy ustawieniu ai na prawej paletce w play, agent sie nie tworzy, nie ma napisow przy wygranej grze w play mode
+# TODO nie ma napisow przy wygranej grze w play mode
 WIDTH = 1280
 HEIGHT = 720
 
@@ -38,14 +38,14 @@ class App:
 
         self.state = self.config.mode
 
-        if self.config.mode == "PLAY":
-            if self.config.right_player == "AI":
+        if self.config.mode == GameState.PLAY:
+            if self.config.right_player == PlayerType.AI:
                 self.agent = Agent()
                 self.agent.model.load(self.config.load_path)
                 self.agent.epsilon = 0 
             self.delta=1/60
         
-        if self.config.mode == "TRAIN":
+        if self.config.mode == GameState.TRAIN:
             self.agent = Agent()
             self.agent.model.load(self.config.load_path)
             self.delta=1/180
@@ -106,23 +106,23 @@ class App:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                    if self.state in ["TRAIN","PLAY"]:
+                    if self.state in [GameState.TRAIN,GameState.PLAY]:
                         self.previous_state = self.state
-                        self.state = "MENU"
-                    elif self.state == "MENU" and hasattr(self, 'previous_state'):
+                        self.state = GameState.MENU
+                    elif self.state == GameState.MENU and hasattr(self, 'previous_state'):
                         self.state = self.previous_state
 
-            if self.state == "MENU":
+            if self.state == GameState.MENU:
                 self.handle_menu(events)
-            elif self.state == "TRAIN":
+            elif self.state == GameState.TRAIN:
                 frame_count = self.handle_train(events,frame_count)
-            elif self.state == "PLAY":
+            elif self.state == GameState.PLAY:
                 self.handle_play(events)
             
             pygame.display.flip()
 
 
-            if self.state == "PLAY":
+            if self.state == GameState.PLAY:
                 self.games[0].clock.tick(60)
             else:
                 self.games[0].clock.tick(500)

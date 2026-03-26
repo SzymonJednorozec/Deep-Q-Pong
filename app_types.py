@@ -14,6 +14,12 @@ class GameResult:
     points_r: int
 
 
+class GameState(Enum):
+    PLAY = auto()
+    TRAIN = auto()
+    MENU = auto()
+    PAUSE = auto()
+
 class PlayerType(Enum):
     HUMAN = auto()
     AI = auto()
@@ -22,7 +28,7 @@ class PlayerType(Enum):
 class AppConfig:
     def __init__(self):
         self.instances = 1
-        self.mode = "TRAIN" # TRAIN / PLAY
+        self.mode = GameState.TRAIN # TRAIN / PLAY
         self.save_path = "model/model.pth"
         self.load_path = "model/model.pth"
         self.save_onnx_path = "model/model.onnx"
@@ -33,7 +39,6 @@ class AppConfig:
         with open(file_path, 'r') as f:
             data = json.load(f)
             self.instances = data.get("instances", self.instances)
-            self.mode = data.get("mode", self.mode)
             self.save_path = data.get("model_save_path", self.save_path)
             self.load_path = data.get("model_load_path", self.load_path)
             self.load_path = data.get("model_save_onnx_path", self.save_onnx_path)
@@ -42,7 +47,13 @@ class AppConfig:
             type_map = {
                 "HUMAN": PlayerType.HUMAN,
                 "AI": PlayerType.AI,
-                "NONE": PlayerType.NONE
+                "NONE": PlayerType.NONE,
+                
+                "PLAY": GameState.PLAY,
+                "TRAIN": GameState.TRAIN,
+                "MENU": GameState.MENU,
+                "PAUSE": GameState.PAUSE,
             }
+            self.mode = type_map.get(data.get("mode"),self.mode)
             self.left_player = type_map.get(data.get("left_player"), self.left_player)
             self.right_player = type_map.get(data.get("right_player"), self.right_player)

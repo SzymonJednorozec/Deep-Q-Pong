@@ -5,5 +5,5 @@
     "model_save_path": "./model/model_new.pth",
     "model_save_onnx_path": "./model/model_new.onnx",
     "left_player": "HUMAN",
-    "right_player": "HUMAN"
+    "right_player": "AI"
 }
