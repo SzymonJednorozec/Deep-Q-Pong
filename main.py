@@ -1,7 +1,8 @@
 import pygame
 from ai_pong import PongGame
 from agent import Agent
-from app_types import PlayerType, AppConfig, GameResult, GameState
+from app_types import PlayerType, AppConfig, GameResult, GameState, PlotInfo
+from plot_graph import generate_and_save_plots
 import sys
 
 # TODO it strongly depends on w and h set up in ai_pong.py
@@ -27,6 +28,9 @@ class App:
         right_paddle = False
         if self.config.right_player != PlayerType.NONE: right_paddle = True
 
+        self.plot_data = [PlotInfo() for _ in range(self.config.instances)]
+        self.global_epsilons = []
+
         self.games = []
         for i in range(self.config.instances):
             is_main = (i == 0)
@@ -46,9 +50,9 @@ class App:
             self.delta=1/60
         
         if self.config.mode == GameState.TRAIN:
-            self.agent = Agent()
+            self.agent = Agent(self.config.e_decay,self.config.e_min,self.config.e_threshold,self.config.e_increase)
             self.agent.model.load(self.config.load_path)
-            self.delta=1/180
+            self.delta=1/120
     
     
     def handle_train(self,events,frame_count): #in training mode only right paddle
@@ -64,10 +68,20 @@ class App:
         
             self.agent.remember(state, action, results.reward_r, next_state, results.done)
             
+            if results.done:
+                self.agent.update_epsilon(self.config.instances,results.points_r)
+
+                info = self.plot_data[i]
+                info.scores.append(results.points_r)
+                info.total_score += results.points_r
+                info.mean_scores.append(info.total_score / len(info.scores))
+                self.global_epsilons.append(self.agent.epsilon)
+
         if frame_count > 12:
             self.agent.train_memory()
             self.agent.soft_update()
             frame_count=0
+
         return frame_count
             
 
@@ -86,7 +100,7 @@ class App:
             self.screen.fill((20, 20, 20))
 
         font = pygame.font.SysFont("arial", 40)
-        txt = font.render("PAUSED - PRESS 'S' TO SAVE OR 'P' TO RESUME", True, (255, 255, 255))
+        txt = font.render("PAUSED - PRESS 'S' TO SAVE OR 'P' TO RESUME OR K TO PLOT", True, (255, 255, 255))
         self.screen.blit(txt, (WIDTH//2 - txt.get_width()//2, HEIGHT//2))
 
         for event in events:
@@ -95,6 +109,8 @@ class App:
                     self.agent.model.save(self.config.save_path)
                     self.agent.model.save_onnx(self.config.save_onnx_path)
                     print(f"--- MODEL SAVED ---")
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
+                generate_and_save_plots(self.plot_data, self.global_epsilons)
 
     def main_loop(self):
         frame_count = 0

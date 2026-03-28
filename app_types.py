@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 import json
 
@@ -12,6 +12,14 @@ class GameResult:
     score_r: int
     points_l: int
     points_r: int
+
+@dataclass
+class PlotInfo:
+    scores: list = field(default_factory=list)
+    mean_scores: list = field(default_factory=list)
+    total_score: int = 0
+
+
 
 
 class GameState(Enum):
@@ -34,6 +42,10 @@ class AppConfig:
         self.save_onnx_path = "model/model.onnx"
         self.left_player = PlayerType.NONE
         self.right_player = PlayerType.AI
+        self.e_threshold = 200
+        self.e_increase = 0.2
+        self.e_decay = 0.995
+        self.e_min = 0.1
 
     def load_from_json(self, file_path):
         with open(file_path, 'r') as f:
@@ -41,7 +53,11 @@ class AppConfig:
             self.instances = data.get("instances", self.instances)
             self.save_path = data.get("model_save_path", self.save_path)
             self.load_path = data.get("model_load_path", self.load_path)
-            self.load_path = data.get("model_save_onnx_path", self.save_onnx_path)
+            self.save_onnx_path = data.get("model_save_onnx_path", self.save_onnx_path)
+            self.e_threshold = data.get("epsilon_increase_threshold", self.e_threshold)
+            self.e_increase = data.get("epsilon_increase", self.e_increase)
+            self.e_decay = data.get("epsilon_decay", self.e_decay)
+            self.e_min = data.get("minimum_epsilon", self.e_min)
 
 
             type_map = {

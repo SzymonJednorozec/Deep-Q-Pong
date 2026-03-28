@@ -12,7 +12,7 @@ BATCH_SIZE = 128
 LR = 0.001
 
 class Agent:
-    def __init__(self):
+    def __init__(self,e_decay = 0.995, min_e = 0.1, e_threshold = 200, e_increase=0.2):
         # self.n_games = 0
         self.gamma = 0.9
         self.memory = deque(maxlen=MAX_MEMORY)
@@ -20,11 +20,14 @@ class Agent:
         self.trainer = Qtrainer(self.model,LR,self.gamma)
         #epsilon decay 
         self.epsilon = 1
-        self.min_epsilon = 0.1
-        self.epsilon_decay = 0.995
+        self.min_epsilon = min_e
+        self.epsilon_decay = e_decay
+        self.epsilon_increase_threshold = e_threshold
+        self.epsilon_increase = e_increase
         
         self.games_from_last_record = 0
         self.record = 0
+
     
     def get_state(self,game,paddle):
         state = game.get_state(paddle)
@@ -67,6 +70,24 @@ class Agent:
 
     def load_model(self):
         self.model.load()
+    
+    def update_epsilon(self,instance_number,points):
+        if self.epsilon > self.min_epsilon:
+            adjusted_decay = 1-((1-self.epsilon_decay)/instance_number)
+            self.epsilon *= adjusted_decay
+            self.games_from_last_record+=1
+
+        if points > self.record: 
+            self.record = points
+            self.games_from_last_record = 0
+        
+        if self.games_from_last_record > self.epsilon_increase_threshold:
+            self.epsilon += self.epsilon_increase
+            self.games_from_last_record=0
+
+            
+    
+ 
     
 def train(agent_l:Agent=None,agent_r:Agent=None):
     
