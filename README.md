@@ -1,4 +1,6 @@
 # Deep-Q-Pong 🏓
+
+![](model/g1.gif)
  
 An autonomous AI agent trained to play Pong from scratch using Reinforcement Learning.
  
@@ -17,6 +19,13 @@ This project features a custom-built Pong environment and an AI agent powered by
 - **Optimized Performance**  Fully vectorized Bellman equation implementation using `PyTorch` and `NumPy`.
  
 ---
+
+## ⚡ Parallel Environments (Vectorized Training)
+ 
+To dramatically accelerate learning and increase data diversity, the environment supports running **multiple game instances simultaneously** within a single window.
+ 
+- **Shared Memory:** All parallel environments feed experiences into a centralized Replay Buffer.
+- **Ghost Visualization:** The primary instance is rendered fully, while parallel games are rendered with alpha blending. This creates a "policy cloud" effect, allowing you to monitor all agents without visual clutter or heavy rendering overhead.
  
 ## 🧠 The AI 
  
@@ -34,11 +43,13 @@ The agent perceives the world through a **5-dimensional state vector:**
  
 ## 📊 Visualizing Results
  
-The project includes a real-time plotting tool (`Matplotlib`) to monitor:
+The project includes a plotting tool (`Matplotlib`) to monitor:
  
 - **Score per Game**  Individual performance
 - **Mean Score**  Rolling average to track long-term learning
 - **Epsilon Decay**  Visualizing the shift from exploration to exploitation
+
+![](model/training_plot.png)
  
 ---
  
@@ -66,5 +77,15 @@ pip install -r requirements.txt
 ### 2. Run training
  
 ```bash
-python agent.py
+python main.py
 ```
+
+### 🎮 Controls & Hotkeys
+ 
+The application uses a robust State Machine to ensure safe saving without interrupting the PyTorch training loop or causing GIL lock issues.
+ 
+- `P` - **Pause/Resume:** Freezes the environment and training loop.
+- `S` - **Save:** (Available only while paused) Saves the PyTorch model (`.pth`), exports the ONNX graph.
+- `K` - **Plot:** (Available only while paused) generates plots.
+- `W` / `S` - Move left paddle (if set to HUMAN)
+- `UP` / `DOWN` - Move right paddle (if set to HUMAN)
