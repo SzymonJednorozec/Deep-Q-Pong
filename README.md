@@ -1,6 +1,6 @@
 # Deep-Q-Pong 🏓
 
-![](model/g1.gif)
+![](images/g1.gif)
  
 An autonomous AI agent trained to play Pong from scratch using Reinforcement Learning.
  
@@ -49,7 +49,7 @@ The project includes a plotting tool (`Matplotlib`) to monitor:
 - **Mean Score**  Rolling average to track long-term learning
 - **Epsilon Decay**  Visualizing the shift from exploration to exploitation
 
-![](model/training_plot.png)
+![](images/training_plot.png)
  
 ---
  
