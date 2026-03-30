@@ -9,5 +9,6 @@
     "epsilon_increase_threshold": 300,
     "epsilon_increase": 0.2,
     "epsilon_decay": 0.990,
-    "minimum_epsilon": 0.1
+    "minimum_epsilon": 0.1,
+    "epsilon": 1
 }

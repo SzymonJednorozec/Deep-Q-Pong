@@ -5,7 +5,6 @@ from app_types import PlayerType, AppConfig, GameResult, GameState, PlotInfo
 from plot_graph import generate_and_save_plots
 import sys
 
-# TODO nie ma napisow przy wygranej grze w play mode
 WIDTH = 1280
 HEIGHT = 720
 
@@ -50,7 +49,7 @@ class App:
             self.delta=1/60
         
         if self.config.mode == GameState.TRAIN:
-            self.agent = Agent(self.config.e_decay,self.config.e_min,self.config.e_threshold,self.config.e_increase)
+            self.agent = Agent(self.config.e_decay,self.config.e_min,self.config.e_threshold,self.config.e_increase,self.config.e)
             self.agent.model.load(self.config.load_path)
             self.delta=1/120
     

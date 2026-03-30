@@ -46,6 +46,7 @@ class AppConfig:
         self.e_increase = 0.2
         self.e_decay = 0.995
         self.e_min = 0.1
+        self.e = 1
 
     def load_from_json(self, file_path):
         with open(file_path, 'r') as f:
@@ -58,6 +59,7 @@ class AppConfig:
             self.e_increase = data.get("epsilon_increase", self.e_increase)
             self.e_decay = data.get("epsilon_decay", self.e_decay)
             self.e_min = data.get("minimum_epsilon", self.e_min)
+            self.e = data.get("epsilon", self.e)
 
 
             type_map = {

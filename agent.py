@@ -12,14 +12,14 @@ BATCH_SIZE = 128
 LR = 0.001
 
 class Agent:
-    def __init__(self,e_decay = 0.995, min_e = 0.1, e_threshold = 200, e_increase=0.2):
+    def __init__(self,e_decay = 0.995, min_e = 0.1, e_threshold = 200, e_increase=0.2, epsilon=1):
         # self.n_games = 0
         self.gamma = 0.9
         self.memory = deque(maxlen=MAX_MEMORY)
         self.model = Linear_Qnet(5,128,3)
         self.trainer = Qtrainer(self.model,LR,self.gamma)
         #epsilon decay 
-        self.epsilon = 1
+        self.epsilon = epsilon
         self.min_epsilon = min_e
         self.epsilon_decay = e_decay
         self.epsilon_increase_threshold = e_threshold
