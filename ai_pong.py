@@ -1,7 +1,7 @@
 import pygame, random
 from pygame import Vector2 as Vec2
 import numpy as np
-from app_types import GameResult
+from app_types import GameResult, GameState
 
 pygame.init()
 font = pygame.font.Font('arial.ttf', 25)
@@ -16,7 +16,7 @@ WHITE, BLACK, GRAY, RED = (255, 255, 255), (0, 0, 0), (150, 150, 150), (255, 50,
 
 class PongGame:
 
-    def __init__(self, screen, left=True, right=True, alpha=255, draw_ui=True, clear_bg=True):
+    def __init__(self, screen, left=True, right=True, alpha=255, draw_ui=True, clear_bg=True, mode = GameState.PLAY):
         self.display = screen
         self.clock = pygame.time.Clock()
         
@@ -29,9 +29,9 @@ class PongGame:
         self.draw_ui = draw_ui
         self.clear_bg = clear_bg
 
-        self.running = True
         self.winner = None
         self.game_active = True
+        self.mode = mode
 
         self.score_l = 0
         self.score_r = 0
@@ -45,7 +45,6 @@ class PongGame:
     def reset_game(self):
         self.score_l = 0
         self.score_r = 0
-        self.winner = None
         self.full_reset()
 
     def full_reset(self):
@@ -75,7 +74,7 @@ class PongGame:
 
 
     def play_step(self, dt, action_l=None, action_r=None):
-        game_over = False
+        done = False
         reward_l, reward_r = 0, 0
         last_points_r, last_points_l = self.points_r, self.points_l
 
@@ -84,20 +83,21 @@ class PongGame:
             reward_l, reward_r = self._update_physics(dt, action_l, action_r)
             last_points_r, last_points_l = self.points_r, self.points_l
         else: 
-            game_over = True
+            done = True
             self.full_reset()
             self.game_active = True
 
         self._draw()
-        return GameResult(reward_l, reward_r, game_over, self.score_l, self.score_r, last_points_l, last_points_r)
+        return GameResult(reward_l, reward_r, done, self.score_l, self.score_r, last_points_l, last_points_r)
 
     def game_loop(self, dt, events, action_l=None, action_r=None):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                if self.winner: self.reset_game()
-                else: self.game_active = True
+                self.full_reset()
+                self.game_active = True
+                # else: self.game_active = True
 
-        if self.game_active and not self.winner:
+        if self.game_active:
             self._update_physics(dt, action_l, action_r)
 
         self._draw()
@@ -121,10 +121,12 @@ class PongGame:
             self.score_r += 1
             reward_l, reward_r = -10, 0
             self.winner = "RIGHT"
+            self.game_active = False
         elif self.paddle_r.create and self.ball.pos.x > self.width - PADDLE_OFFSET:
             self.score_l += 1
             reward_l, reward_r = 0, -10
             self.winner = "LEFT"
+            self.game_active = False
         
         return reward_l, reward_r
     
@@ -157,7 +159,7 @@ class PongGame:
         fps_surf = font.render(fps_text, True, RED)
         self.display.blit(fps_surf, (10, 10))
         
-        if not self.game_active:
+        if not self.game_active and self.mode == GameState.PLAY:
             msg = font.render("PRESS SPACE TO SERVE", True, WHITE)
             self.display.blit(msg, (self.width//2 - msg.get_width()//2, self.height//2 + 50))
     

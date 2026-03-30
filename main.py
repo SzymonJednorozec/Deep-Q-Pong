@@ -5,7 +5,6 @@ from app_types import PlayerType, AppConfig, GameResult, GameState, PlotInfo
 from plot_graph import generate_and_save_plots
 import sys
 
-# TODO it strongly depends on w and h set up in ai_pong.py
 # TODO nie ma napisow przy wygranej grze w play mode
 WIDTH = 1280
 HEIGHT = 720
@@ -37,7 +36,8 @@ class App:
             g = PongGame(self.screen, left_paddle, right_paddle,
                          alpha = 255 if is_main else 50,
                          draw_ui = is_main,
-                         clear_bg = is_main)
+                         clear_bg = is_main,
+                         mode = self.config.mode)
             self.games.append(g)
 
         self.state = self.config.mode
