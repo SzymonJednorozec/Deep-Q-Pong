@@ -73,7 +73,7 @@ class PongGame:
             self._draw_ui_elements()
 
 
-    def play_step(self, dt, action_l=None, action_r=None):
+    def play_step(self, dt, action_l=None, action_r=None): # TRAIN mode
         done = False
         reward_l, reward_r = 0, 0
         last_points_r, last_points_l = self.points_r, self.points_l
@@ -90,7 +90,7 @@ class PongGame:
         self._draw()
         return GameResult(reward_l, reward_r, done, self.score_l, self.score_r, last_points_l, last_points_r)
 
-    def game_loop(self, dt, events, action_l=None, action_r=None):
+    def game_loop(self, dt, events, action_l=None, action_r=None): # PLAY mode
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 self.full_reset()
