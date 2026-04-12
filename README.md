@@ -89,3 +89,35 @@ The application uses a robust State Machine to ensure safe saving without interr
 - `K` - **Plot:** (Available only while paused) generates plots.
 - `W` / `S` - Move left paddle (if set to HUMAN)
 - `UP` / `DOWN` - Move right paddle (if set to HUMAN)
+
+## ⚙️ Configuration (`config.json`)
+
+The project features a dedicated configuration system driven by a JSON file. This allows you to easily switch between training environments, evaluation modes, and adjust hyperparameters without modifying the source code.
+
+Below is an example of the `config.json` structure:
+
+```json
+{
+    "instances": 3,
+    "mode": "TRAIN",
+    "model_load_path": "./model/model.pth",
+    "model_save_path": "./model/model_new.pth",
+    "model_save_onnx_path": "./model/model_new.onnx",
+    "left_player": "NONE",
+    "right_player": "AI",
+    "epsilon_increase_threshold": 300,
+    "epsilon_increase": 0.2,
+    "epsilon_decay": 0.990,
+    "minimum_epsilon": 0.1
+}
+```
+- **mode**: Determines the operation mode of the application.
+  - **"TRAIN"**: Starts the reinforcement learning loop. The agent explores, learns, and updates its neural network. It operates without an FPS limit to maximize training speed.
+
+  - **"PLAY"**: Evaluation or gameplay mode. The agent uses the loaded model purely for prediction (no learning occurs, epsilon is set to 0). **Note**: When using "PLAY" mode, it is highly recommended to set "instances": 1 for a proper viewing experience.
+
+- **Instances**: Specifies the number of parallel game instances to run. This is crucial for training speed and data diversity. For evaluation or gameplay, it is recommended to set this to 1.
+- **Player Setup**: Configures the control scheme for both paddles.
+  - **"left_player"**: Can be set to "HUMAN" (controlled via W/S) or "NONE" (paddle vs wall). Note: The AI is currently designed to operate the right paddle only.
+  - **"right_player"**: Can be set to "AI" (controlled by the model), "HUMAN" (controlled via UP/DOWN), or "NONE".
+- **Epsilon Parameters** (Training Only): Controls the agent's exploration strategy. epsilon_increase_threshold allows the agent to intentionally inject exploration if it hasn't beaten its high score after a certain number of games, preventing it from getting stuck in local optima.
