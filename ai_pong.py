@@ -73,14 +73,14 @@ class PongGame:
             self._draw_ui_elements()
 
 
-    def play_step(self, dt, action_l=None, action_r=None): # TRAIN mode
+    def play_step(self, dt, actions): # TRAIN mode
         done = False
         reward_l, reward_r = 0, 0
         last_points_r, last_points_l = self.points_r, self.points_l
 
         if not self.winner:
             # evaluating reward 
-            reward_l, reward_r = self._update_physics(dt, action_l, action_r)
+            reward_l, reward_r = self._update_physics(dt, actions)
             last_points_r, last_points_l = self.points_r, self.points_l
         else: 
             done = True
@@ -90,7 +90,7 @@ class PongGame:
         self._draw()
         return GameResult(reward_l, reward_r, done, self.score_l, self.score_r, last_points_l, last_points_r)
 
-    def game_loop(self, dt, events, action_l=None, action_r=None): # PLAY mode
+    def game_loop(self, dt, events, actions): # PLAY mode
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 self.full_reset()
@@ -98,14 +98,14 @@ class PongGame:
                 # else: self.game_active = True
 
         if self.game_active:
-            self._update_physics(dt, action_l, action_r)
+            self._update_physics(dt, actions)
 
         self._draw()
 
     # physic + reward
-    def _update_physics(self, dt, action_l, action_r):
+    def _update_physics(self, dt, actions):
         r_l, r_r = self._check_collisions(self.ball, self.paddle_l, self.paddle_r)
-        self._move(dt, action_l, action_r)
+        self._move(dt, actions)
         
         sl, sr = self._check_score()
         r_l += sl; r_r += sr
@@ -136,12 +136,18 @@ class PongGame:
             return -distance_penalty 
         return 0
 
-    def _move(self, dt, action_l, action_r):
-        if action_l: self.paddle_l.move_AI(dt, action_l)
-        else: self.paddle_l.move_player(dt, is_left=True)
+    def _move(self, dt, actions):
 
-        if action_r: self.paddle_r.move_AI(dt, action_r)
-        else: self.paddle_r.move_player(dt, is_left=False)
+        if actions.get('left'): 
+            self.paddle_l.move_AI(dt, actions['left'])
+        else: 
+            self.paddle_l.move_player(dt, is_left=True)
+
+
+        if actions.get('right'): 
+            self.paddle_r.move_AI(dt, actions['right'])
+        else: 
+            self.paddle_r.move_player(dt, is_left=False)
 
         self.ball.move(dt)
     

@@ -64,7 +64,7 @@ class App:
                 
             self.game_controllers.append(controllers)
         
-        if self.config.mode == GameState.TRAIN: # Only right paddle + agent(for now same)
+        if self.config.mode == GameState.TRAIN: # Only right paddle + agent(for now same agent for all paddles)
             self.delta = 1/120
             
             
@@ -80,15 +80,15 @@ class App:
                 self.game_controllers.append(controllers)
     
     
-    def handle_train(self,events,frame_count): #in training mode only right paddle
+    def handle_train(self,events,frame_count): #training mode only right paddle
         frame_count+=1
         for i,game in enumerate(self.games):
-            controllers = self.game_controllers
+            controller = self.game_controllers[i]
 
             states = {}
             actions = {'left': None, 'right':None}
 
-            for side, agent in controllers.items():
+            for side, agent in controller.items():
                 if agent is not None:
                     paddle = game.paddle_l if side == 'left' else game.paddle_r
                     state = agent.get_state(game, paddle)
@@ -96,11 +96,11 @@ class App:
                     actions[side] = agent.get_action(state)
 
 
-
             # reward_l,reward_r, done, score_l, score_r, points_l, points_r
             results: GameResult = game.play_step(self.delta, actions)
 
-            for side, agent in controllers.items():
+
+            for side, agent in controller.items():
                 if agent is not None:
                     paddle = game.paddle_l if side == 'left' else game.paddle_r
                     next_state = agent.get_state(game, paddle)
@@ -110,8 +110,8 @@ class App:
             
             if results.done:
 
-                if controllers['right'] is not None:
-                    controllers['right'].update_epsilon(self.config.instances, results.points_r)
+                if controller['right'] is not None:
+                    controller['right'].update_epsilon(self.config.instances, results.points_r)
                     
                     info = self.plot_data[i]
                     info.scores.append(results.points_r)
@@ -132,16 +132,21 @@ class App:
 
     def handle_play(self,events):
         game = self.games[0]
-        controllers = self.game_controllers[0]
-        actios={}
-        if self.agent is not None:
-            state = self.agent.get_state(game,game.paddle_r)
-            action = self.agent.get_action(state)
-        game.game_loop(self.delta,events,None,action)
+        controller = self.game_controllers[0]
+        actions={'left':None,'right':None}
+
+        
+        for side,agent in controller.items():
+            if agent is not None:
+                paddle = game.paddle_l if side == 'left' else game.paddle_r
+                state = agent.get_state(game,paddle)
+                actions[side] = agent.get_action(state)
+        
+        game.game_loop(self.delta,events,actions)
     
     def handle_menu(self, events):
         if len(self.games) > 0:
-            self.games[0]._draw() 
+            self.games[0]._draw(alpha=100) 
         else:
             self.screen.fill((20, 20, 20))
 
@@ -151,9 +156,10 @@ class App:
 
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                if self.agent is not None:
-                    self.agent.model.save(self.config.save_path)
-                    self.agent.model.save_onnx(self.config.save_onnx_path)
+                # Saving only the main agent (TRAIN mode has only one agent for now, this can change in the future)
+                if len(self.agents) > 0:
+                    self.agents[0].model.save(self.config.save_path)
+                    self.agents[0].model.save_onnx(self.config.save_onnx_path)
                     print(f"--- MODEL SAVED ---")
             if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
                 generate_and_save_plots(self.plot_data, self.global_epsilons)

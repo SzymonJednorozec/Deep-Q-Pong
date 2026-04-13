@@ -12,7 +12,7 @@ BATCH_SIZE = 128
 LR = 0.001
 
 class Agent:
-    def __init__(self,e_decay = 0.995, min_e = 0.1, e_threshold = 200, e_increase=0.2, epsilon=1):
+    def __init__(self,e_decay = 0.995, min_e = 0.1, e_threshold = 200, e_increase=0.2, epsilon=1,is_left = False):
         # self.n_games = 0
         self.gamma = 0.9
         self.memory = deque(maxlen=MAX_MEMORY)
@@ -28,10 +28,18 @@ class Agent:
         self.games_from_last_record = 0
         self.record = 0
 
+        self.is_left = is_left
+
     
-    def get_state(self,game,paddle):
+    def get_state(self, game, paddle):
         state = game.get_state(paddle)
-        return np.array(state,dtype=float)
+        
+        if self.is_left:
+            # state = [paddle_y, ball_x, ball_y, ball_dir_x, ball_dir_y]
+            state[1] = 1.0 - state[1]  
+            state[3] = -state[3]       
+            
+        return np.array(state, dtype=float)
     
     def remember(self,state,action,reward,next_state,done):
         self.memory.append((state,action,reward,next_state,done))
